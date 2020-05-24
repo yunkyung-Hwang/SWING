@@ -1,0 +1,33 @@
+from bs4 import BeautifulSoup
+import urllib.request
+
+# 서울여자대학교 대학/대학원 페이지 리소스 읽어오기
+html1 = urllib.request.urlopen("http://www.swu.ac.kr/www/swuniversity.html")
+html1_page = BeautifulSoup(html1.read(),"html.parser")
+
+# 위의 페이지에서 모든 li태그 추출 (전공명 + 대학원 + 공동기기실)
+major = html1_page.findAll("li")    # 전공들
+
+print("*** 서울여자대학교 학과 및 홈페이지 정보 ***")
+print("학과                   홈페이지")
+
+for s in major:
+    address="http://www.swu.ac.kr"+s.find("a")["href"]  # 전공별 페이지(모두 존재)
+
+    # 위에서 받아온 페이지 리소스 읽어오기
+    html2=urllib.request.urlopen(address)
+    html2_page = BeautifulSoup(html2.read(),"html.parser")
+    
+    # 들어간 페이지의 링크 저장
+    main = html2_page.find("a",{"class","btn btn_xl btn_blue_gray"})
+
+    # 대학원과 공동기기실 필터링
+    if "대학원" in s.text or s.text == "공동기기실":
+        continue
+    else:
+        if main is None:    # 컴퓨터학과와 콘텐츠디자인학과의 경우 main존재 x
+            print(s.text+"           홈페이지가 존재하지 않습니다")
+        elif "홈페이지" in main.text:   # 홈페이지 바로가기 버튼이 있는 경우
+            print(s.text+"           "+main['href'])
+        else:                           # 홈페이지 바로가기 버튼이 없는 경우
+            print(s.text+"           홈페이지가 존재하지 않습니다")
