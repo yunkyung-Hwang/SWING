@@ -1,0 +1,58 @@
+from bs4 import BeautifulSoup
+import urllib.request
+import os
+
+# 해당 웹툰 페이지
+html = urllib.request.urlopen("https://comic.naver.com/webtoon/list.nhn?titleId=703852&weekday=tue")
+html_page = BeautifulSoup(html.read(),"html.parser")
+
+# 웹툰의 이름만 받아오기
+title=html_page.find("div",{"class","detail"})
+title=title.find("h2")
+
+title=str(title.text)
+title=title.split("\n")
+title=title[1].split(" ")
+title=title[8]+" "+title[9]
+
+# 받아온 이름으로 파일 생성 및 이동
+os.mkdir(title)
+os.chdir(title)
+
+# 해당 페이지의 모든 회차 받아오기
+last_toon = html_page.findAll("td",{"class","title"})
+
+for epi in last_toon:
+    epi_title=str(epi.text)         # 에피소드 제목 저장
+    epi_title=epi_title.strip()     # 공백 삭제
+
+    
+    os.mkdir(epi_title)     # 제목별 폴더 생성
+    os.chdir(epi_title)     # 폴더 내부로 이동
+
+
+    # 사이트 안으로 들어가서 만화(이미지) 가져오기
+    address = "https://comic.naver.com"+epi.find("a")["href"]   # 들어갈 주소 설정
+
+    html2=urllib.request.urlopen(address)
+    html2_page = BeautifulSoup(html2.read(),"html.parser")
+
+    url=html2_page.find("div",{"class","wt_viewer"})
+    url=url.findAll("img")
+
+    i=1
+    for s in url:
+        file_name="%d.jpg" %i       # 파일명 지정
+        img_url=s.get('src')        # 이미지 url받아옴
+    
+        # 403 forbidden 에러 해결을 위한 우회 과정
+        opener=urllib.request.build_opener()
+        opener.addheaders=[('User-Agent','Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+
+        # 다운로드
+        urllib.request.urlretrieve(img_url,file_name)
+
+        i+=1
+    
+    os.chdir('..')      # 한 회차 저장이 완료되면 전 디렉토리로 이동하여 위의 과정 반복
